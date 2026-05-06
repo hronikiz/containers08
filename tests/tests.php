@@ -53,7 +53,7 @@ function testDbDelete() {
 }
 
 function testPageRender() {
-    $page = new Page(__DIR__ . '/../site/templates/index.tpl');
+    $page = new Page(__DIR__ . '/../templates/index.tpl');
     $html = $page->Render([
         "title" => "Test",
         "content" => "Hello"
