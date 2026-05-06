@@ -71,6 +71,68 @@ INSERT INTO page (title, content) VALUES ('Page 3', 'Content 3');
 
 ### Класс Database
 
+```php
+<?php
+
+class Database {
+    private $pdo;
+
+    public function __construct($path) {
+        $this->pdo = new PDO("sqlite:" . $path);
+        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    }
+
+    public function Execute($sql) {
+        return $this->pdo->exec($sql);
+    }
+
+    public function Fetch($sql) {
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function Create($table, $data) {
+        $keys = implode(",", array_keys($data));
+        $values = ":" . implode(", :", array_keys($data));
+
+        $stmt = $this->pdo->prepare("INSERT INTO $table ($keys) VALUES ($values)");
+        $stmt->execute($data);
+
+        return $this->pdo->lastInsertId();
+    }
+
+    public function Read($table, $id) {
+        $stmt = $this->pdo->prepare("SELECT * FROM $table WHERE id = :id");
+        $stmt->execute(["id" => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function Update($table, $id, $data) {
+        $set = "";
+        foreach ($data as $key => $value) {
+            $set .= "$key = :$key,";
+        }
+        $set = rtrim($set, ",");
+
+        $data["id"] = $id;
+
+        $stmt = $this->pdo->prepare("UPDATE $table SET $set WHERE id = :id");
+        return $stmt->execute($data);
+    }
+
+    public function Delete($table, $id) {
+        $stmt = $this->pdo->prepare("DELETE FROM $table WHERE id = :id");
+        return $stmt->execute(["id" => $id]);
+    }
+
+    public function Count($table) {
+        $stmt = $this->pdo->query("SELECT COUNT(*) as cnt FROM $table");
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $res["cnt"];
+    }
+}
+```
+
 Реализует работу с базой данных и содержит методы:
 
 * `Execute($sql)` — выполнение SQL-запросов
@@ -84,6 +146,29 @@ INSERT INTO page (title, content) VALUES ('Page 3', 'Content 3');
 ---
 
 ### Класс Page
+
+```php
+<?php
+
+class Page {
+    private $template;
+
+    public function __construct($template) {
+        $this->template = file_get_contents($template);
+    }
+
+    public function Render($data) {
+        $output = $this->template;
+
+        foreach ($data as $key => $value) {
+            $output = str_replace("{{".$key."}}", $value, $output);
+        }
+
+        return $output;
+    }
+}
+```
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/a1f0300c-1311-41af-9a66-bccab1e28578" />
 
 Отвечает за шаблонизацию HTML:
 
@@ -215,7 +300,7 @@ docker exec container php /var/www/html/tests/tests.php
 
 ---
 
-## ⚙️ GitHub Actions (CI)
+## GitHub Actions (CI)
 
 Настроен автоматический pipeline:
 
